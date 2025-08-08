@@ -1,0 +1,163 @@
+generator client {
+    provider        = "prisma-client-js"
+    binaryTargets   = ["native", "debian-openssl-3.0.x"]
+    previewFeatures = ["fullTextSearch"]
+}
+
+datasource db {
+    provider  = "postgresql"
+    url       = env("POSTGRES_URL") // uses connection pooling
+    directUrl = env("POSTGRES_URL_NON_POOLING") // uses a direct connection
+}
+
+model Category {
+    id            Int             @id @default(autoincrement())
+    name          String
+    photo         String
+    categoryChild CategoryChild[]
+    product       Product[]
+    createAt      DateTime        @default(now())
+    updateAt      DateTime        @updatedAt
+}
+
+model CategoryChild {
+    id                 Int                  @id @default(autoincrement())
+    name               String
+    categoryChildChild CategoryChildChild[]
+    category           Category             @relation(fields: [categoryId], references: [id])
+    categoryId         Int
+    product            Product[]
+    createAt           DateTime             @default(now())
+    updateAt           DateTime             @updatedAt
+}
+
+model CategoryChildChild {
+    id              Int           @id @default(autoincrement())
+    name            String
+    categoryChild   CategoryChild @relation(fields: [categoryChildId], references: [id])
+    categoryChildId Int
+    product         Product[]
+    createAt        DateTime      @default(now())
+    updateAt        DateTime      @updatedAt
+}
+
+model Product {
+    id                   Int                 @id @default(autoincrement())
+    article              Int                 @unique
+    name                 String
+    price                Int
+    category             Category?           @relation(fields: [categoryId], references: [id])
+    categoryId           Int?
+    categoryChild        CategoryChild?      @relation(fields: [categoryChildId], references: [id])
+    categoryChildId      Int?
+    categoryChildChild   CategoryChildChild? @relation(fields: [categoryChildChildId], references: [id])
+    categoryChildChildId Int?
+    photo                ProductPhoto[]
+    orderItem            OrderItem[]
+    cartItem             CartItem[]
+    createAt             DateTime            @default(now())
+    updateAt             DateTime            @updatedAt
+}
+
+model ProductPhoto {
+    id        Int     @id @default(autoincrement())
+    product   Product @relation(fields: [productId], references: [id])
+    productId Int
+    photoUrl  String
+
+    createAt DateTime @default(now())
+    updateAt DateTime @updatedAt
+}
+
+model Story {
+    id              Int         @id @default(autoincrement())
+    previewImageUrl String
+    items           StoryItem[]
+    createAt        DateTime    @default(now())
+}
+
+model StoryItem {
+    id        Int    @id @default(autoincrement())
+    story     Story  @relation(fields: [storyId], references: [id])
+    storyId   Int
+    sourceUrl String
+
+    createAt DateTime @default(now())
+}
+
+model User {
+    id         Int      @id @default(autoincrement())
+    token      String?  @unique
+    email      String?
+    number     String?
+    role       UserRole @default(USER)
+    provider   String?
+    providerId String?
+    cart       Cart?
+    orders     Order[]
+    createAt   DateTime @default(now())
+    updateAt   DateTime @updatedAt
+}
+
+model Cart {
+    id          Int        @id @default(autoincrement())
+    user        User?      @relation(fields: [userId], references: [id])
+    userId      Int?       @unique
+    token       String?    @unique
+    items       CartItem[]
+    totalAmount Int        @default(0)
+    createAt    DateTime   @default(now())
+    updateAt    DateTime   @updatedAt
+}
+
+model CartItem {
+    id        Int      @id @default(autoincrement())
+    cart      Cart     @relation(fields: [cartId], references: [id])
+    cartId    Int
+    product   Product  @relation(fields: [productId], references: [id])
+    productId Int
+    quantity  Int
+    createAt  DateTime @default(now())
+    updateAt  DateTime @updatedAt
+}
+
+model Order {
+    id          Int         @id @default(autoincrement())
+    token       String
+    user        User?       @relation(fields: [userId], references: [id])
+    userId      Int?
+    items       OrderItem[]
+    name        String?
+    surname     String?
+    email       String?
+    phone       String?
+    totalAmount Int         @default(0)
+    status      OrderStatus @default(START)
+    createAt    DateTime    @default(now())
+    updateAt    DateTime    @updatedAt
+}
+
+model OrderItem {
+    id        Int      @id @default(autoincrement())
+    order     Order    @relation(fields: [orderId], references: [id])
+    orderId   Int
+    product   Product  @relation(fields: [productId], references: [id])
+    productId Int
+    quantity  Int
+    createAt  DateTime @default(now())
+    updateAt  DateTime @updatedAt
+}
+
+enum UserRole {
+    USER
+    ADMIN
+    MANAGER
+}
+
+enum OrderStatus {
+    START
+    SENDED
+    END_TRUE
+    END_FALSE
+    CLOSE
+}
